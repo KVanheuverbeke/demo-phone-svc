@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: Phone SVC
+
+  boot:
+    admin:
+      client:
+        instance:
+          name: Phone SVC
+
+server:
+  forward-headers-strategy: framework
+
+management:
+  info:
+    env:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    operationsSorter: alpha
+
+info:
+  contact:
+    name: xxx
+    url:
+    email: xxx
+  build:
+    name: Phone SVC
+    description: Phone number normalization
+    version: ${version}
+
+logging:
+  level:
+    root: info
+    be.dataxc: debug
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: development
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: testing
+
+logging:
+  level:
+    root: info
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: production
+
+logging:
+  level:
+    root: info

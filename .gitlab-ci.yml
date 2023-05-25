@@ -1,0 +1,62 @@
+before_script:
+    - 'command -v ssh-agent >/dev/null || ( apt-get update -y && apt-get install openssh-client -y )'
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - chmod +x ./gradlew
+    - chmod +x ./.gitlab/ci/build.sh
+
+stages:
+    - build
+    - test
+    - dockerize
+
+variables:
+    DOCKER_IMAGE: phone-svc
+
+build:
+    stage: build
+    script:
+        - ./.gitlab/ci/build.sh
+    artifacts:
+        paths:
+            - build/
+    cache:
+        key: "$CI_COMMIT_REF_NAME"
+        policy: pull
+        paths:
+            - build
+            - .gradle
+            - .gitlab/ci
+
+test:
+    stage: test
+    tags:
+        - Linux
+    script:
+        - echo "Test stage"
+        - chmod +x gradlew
+        - ./gradlew test -i
+        - cat build/reports/jacoco/test/html/index.html
+    artifacts:
+        when: always
+        paths:
+            - build/reports/
+        reports:
+            junit: build/test-results/test/**/TEST-*.xml
+    only:
+        - master
+
+dockerize:
+    stage: dockerize
+    tags:
+        - Linux
+    script:
+        - echo "Dockerizing the application"
+        - DOCKERVERSION=`git describe --tags --abbrev=0`
+        - echo "Latest DOCKER TAG:" $DOCKERVERSION
+        - docker build -t dataxc/$DOCKER_IMAGE .
+        - /home/users/gitlab-runner/docker_push.sh $DOCKER_IMAGE $DOCKERVERSION
+    only:
+        - master
